@@ -1,8 +1,9 @@
 ; !(register-module! ../../../metta)
+!(import! &self ../../../../PeTTa/lib/lib_import)
 ;; Import modules
 !(import! &self ../../../metta/pln/dependent-types/GeneralizationDTLhelper)
 !(import! &self ../../../metta/pln/dependent-types/GeneralizationDTL)
-!(import! &kb ../../../metta/pln/dependent-types/GeneralizationKB)
+!(static-import! &kb ../../../metta/pln/dependent-types/GeneralizationKB/lcg_kb)
 !(import! &self ../../../metta/common/truthvalue/MeasEq)
 ; !(import! &self metta:common:formula:DeductionFormula)
 !(import! &self ../../../metta/common/truthvalue/TruthValue)
@@ -15,7 +16,7 @@
 ; !(let $lcgs (py-call (lcggenerator.generate_lcg_rules 2)) (let $slcgs (sread $lcgs) (superpose $slcgs)))
 ; !(import! &self metta:pln:dependent-types:helper)
 
-
+!(println! "KB loaded")
 (: Predicate Type)
 (: → (-> Predicate %Undefined% Expression Type))
 (: water Predicate)
@@ -27,7 +28,8 @@
 (= (kb) (get-atoms &kb))
 (: rb (-> Atom))
 ; (= (rb) (double-depth-lcg-rule))
-(= (rb) (let $lcgs (py-call (lcggenerator.generate_lcg_and_write_synthesizers 2 "synthesizers.metta")) (let $slcgs (sread $lcgs) (superpose $slcgs))))
+(= (rb) (let $lcgs (py-call (lcggenerator.generate_lcg_and_write_synthesizers 2 "synthesizers.metta")) (let $slcgs (sread $lcgs) (eval (superpose $slcgs)))))
+; !(rb)
 
 (= (generalization-path-finder-helper $concept $kb $result)
     (let (: $proof (≞ (→ $concept $gen ()) (STV $s $c))) ($kb) (let $updated-result (union-atom $result (-> $gen)) ($gen $updated-result)))
@@ -72,7 +74,7 @@
 )
 
 (= (pair-lcg $concept1 $concept2 $kb $space $max-depth)
-    (let $res (collapse (synthesize (: $proof (≞ (→ $concept1 $concept2 ($lcg)) $tv)) kb rb (S Z)))
+    (let $res (collapse (synthesize (: $proof (≞ (→ $concept1 $concept2 ($lcg)) $tv)) $space rb (S Z)))
             (if (== $res ())
                     (let ($c1-gen-path $c2-gen-path) (collapse(superpose((generalization-path-finder $concept1 kb $max-depth 0 ($concept1)) (generalization-path-finder $concept2 kb $max-depth 0 ($concept2))))) 
                         (if (or (and (== (size-atom $c1-gen-path) 1) (> (size-atom $c2-gen-path) 1)) (and (> (size-atom $c1-gen-path) 1) (== (size-atom $c2-gen-path) 1)))
@@ -89,8 +91,79 @@
     )
 )
 
-!(get-atoms &kb)
+(= (get-alg-spec-part $alg-spec $part)
+    (let (Concept $concept-name (spec (sorts $sorts) (ops $ops) (preds $preds) (axioms $axioms))) $alg-spec
+        (if (== $part sorts)
+            $sorts
+            (if (== $part ops)
+                $ops
+                (if (== $part preds)
+                    $preds
+                    $axioms
+                )
+            )
+        )
+    )
+)
 
-!(pair-lcg sparrow airplane kb &kb 10)
+(= (input-spec1) 
+    (Concept House
+        (spec
+            (sorts (
+                (Object 1.0) 
+                (Structure 0.9) 
+                ((House < Structure) 1.0)
+            ))
+            (ops (
+                ((house : House) 1.0) 
+                ((resident : Person) 0.8) 
+                ((garden : ExternalSpace) 0.4)
+            ))
+            (preds (
+                ((providesShelter House) 0.95)
+                ((hasColor House Color) 0.2)
+            ))
+            (axioms (
+                ((providesShelter (house)) 0.95)
+            ))
+        )
+    )
+)
 
-!(get-atoms &kb)
+(= (input-spec2) 
+    (Concept House
+        (spec
+            (sorts (
+                (Object 1.0) 
+                (Structure 0.9) 
+                ((House < Structure) 1.0)
+            ))
+            (ops (
+                ((house : House) 1.0) 
+                ((resident : Person) 0.8) 
+                ((garden : ExternalSpace) 0.4)
+            ))
+            (preds (
+                ((providesShelter House) 0.95)
+                ((hasColor House Color) 0.2)
+            ))
+            (axioms (
+                ((providesShelter (house)) 0.95)
+            ))
+        )
+    )
+)
+
+(= (main-lcg $c1-alg-spec $c2-alg-spec)
+    (let ($c1-sort $c2-sort) (collapse(superpose((get-alg-spec-part $c1-alg-spec ops) (get-alg-spec-part $c2-alg-spec ops))))
+        ($c1-sort $c2-sort)
+    )
+)
+
+!(main-lcg (input-spec1) (input-spec2))
+
+; !(get-atoms &kb)
+
+; !(pair-lcg sparrow airplane kb &kb 10)
+
+; !(get-atoms &kb)

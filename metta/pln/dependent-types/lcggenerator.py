@@ -17,7 +17,7 @@ def build_chain(side, depth, var_offset):
         atoms.append(f"(≞ (→ ${side} $lcg ()) {tv})")
         return atoms, tv, var_offset
 
-    # depth ≥ 1 → chain + STV
+    # depth ≥ 1 → chain + stv
     tvs = []
     prev = f"${side}"
 
@@ -33,7 +33,7 @@ def build_chain(side, depth, var_offset):
     atoms.append(f"(≞ (→ {prev} $lcg ()) {tv})")
     tvs.append(tv)
 
-    return atoms, f"(STV ({' '.join(tvs)}) ())", var_offset
+    return atoms, f"(stv ({' '.join(tvs)}) ())", var_offset
 
 
 def generate_lcg_rules(max_depth):
@@ -172,8 +172,8 @@ def generate_lcg_and_write_synthesizers(max_depth, synthesizer_path):
 
     # 2. Generate synthesizers (written to file)
     synthesizers = generate_all_synthesizers(max_depth)
-    with open(synthesizer_path, "w") as f:
-        f.write(synthesizers)
+    # with open(synthesizer_path, "w") as f:
+    #     f.write(synthesizers)
 
     return lcg_rules
 
