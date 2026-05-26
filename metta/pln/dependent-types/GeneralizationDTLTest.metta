@@ -4,6 +4,7 @@
 !(import! &self ../../../metta/pln/dependent-types/GeneralizationDTLhelper)
 !(import! &self ../../../metta/pln/dependent-types/GeneralizationDTL)
 !(static-import! &kb ../../../metta/pln/dependent-types/GeneralizationKB/lcg_kb)
+; !(static-import! &kb ../../../metta/pln/dependent-types/GeneralizationKB)
 !(import! &self ../../../metta/common/truthvalue/MeasEq)
 ; !(import! &self metta:common:formula:DeductionFormula)
 !(import! &self ../../../metta/common/truthvalue/TruthValue)
@@ -76,17 +77,18 @@
 (= (pair-lcg $concept1 $concept2 $kb $space $max-depth)
     (let $res (collapse (synthesize (: $proof (≞ (→ $concept1 $concept2 ($lcg)) $tv)) $space rb (S Z)))
             (if (== $res ())
-                    (let ($c1-gen-path $c2-gen-path) (collapse(superpose((generalization-path-finder $concept1 kb $max-depth 0 ($concept1)) (generalization-path-finder $concept2 kb $max-depth 0 ($concept2))))) 
-                        (if (or (and (== (size-atom $c1-gen-path) 1) (> (size-atom $c2-gen-path) 1)) (and (> (size-atom $c1-gen-path) 1) (== (size-atom $c2-gen-path) 1)))
-                            (let ($c1lcgpath $c2lcgpath $c1stvs $c2stvs) (sread (useGenAI partialpathlcgprompt ($concept1 $c1-gen-path) ($concept2 $c2-gen-path))) 
-                                (new-lcg-adder $space $c1lcgpath $c2lcgpath $c1stvs $c2stvs)
-                            )
-                            (let ($c1lcgpath $c2lcgpath $c1stvs $c2stvs) (sread (useGenAI fullpathlcgprompt ($concept1 $c1-gen-path) ($concept2 $c2-gen-path))) 
-                                (new-lcg-adder $space $c1lcgpath $c2lcgpath $c1stvs $c2stvs)
-                            )
-                        )
-                    )
-                    $res
+                ;     (let ($c1-gen-path $c2-gen-path) (collapse(superpose((generalization-path-finder $concept1 kb $max-depth 0 ($concept1)) (generalization-path-finder $concept2 kb $max-depth 0 ($concept2))))) 
+                ;         (if (or (and (== (size-atom $c1-gen-path) 1) (> (size-atom $c2-gen-path) 1)) (and (> (size-atom $c1-gen-path) 1) (== (size-atom $c2-gen-path) 1)))
+                ;             (let ($c1lcgpath $c2lcgpath $c1stvs $c2stvs) (sread (useGenAI partialpathlcgprompt ($concept1 $c1-gen-path) ($concept2 $c2-gen-path))) 
+                ;                 (new-lcg-adder $space $c1lcgpath $c2lcgpath $c1stvs $c2stvs)
+                ;             )
+                ;             (let ($c1lcgpath $c2lcgpath $c1stvs $c2stvs) (sread (useGenAI fullpathlcgprompt ($concept1 $c1-gen-path) ($concept2 $c2-gen-path))) 
+                ;                 (new-lcg-adder $space $c1lcgpath $c2lcgpath $c1stvs $c2stvs)
+                ;             )
+                ;         )
+                ;     )
+                $res
+                $res
             )
     )
 )
@@ -160,10 +162,10 @@
     )
 )
 
-!(main-lcg (input-spec1) (input-spec2))
+; !(main-lcg (input-spec1) (input-spec2))
 
 ; !(get-atoms &kb)
 
-; !(pair-lcg sparrow airplane kb &kb 10)
+!(pair-lcg sparrow airplane kb &kb 10)
 
 ; !(get-atoms &kb)

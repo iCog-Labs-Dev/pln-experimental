@@ -50,4 +50,6 @@
           ($text (py-call (getattr $resp "text"))))
          $text))
 
+
+
 ; !(useGenAI lcgprompt (sea (sea -> surface-water -> watershed -> hydrologic-system -> planetary-composition)) (land (land -> land-surface -> landform -> terrain -> geosphere)))
