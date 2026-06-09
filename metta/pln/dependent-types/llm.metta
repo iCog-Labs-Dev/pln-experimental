@@ -1,5 +1,6 @@
 !(import! &self ../../../metta/pln/dependent-types/fullpathlcgprompt)
 !(import! &self ../../../metta/pln/dependent-types/partialpathlcgprompt)
+!(import! &self ../../../metta/pln/dependent-types/algebraicspecprompt)
 
 ;Create string by appending the list entries
 (= (py-str-helper () $outp) $outp)

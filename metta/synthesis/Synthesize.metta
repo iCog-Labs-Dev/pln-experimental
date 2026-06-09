@@ -33,9 +33,7 @@
 (= (synthesize $query $kb $rb $depth)
    (let*
      (
-               ($_ (println! ("In Nullary Rule")))
                ($query ($kb))
-               ($_ (println! (Nullary $query)))
      )
      $query
     )
@@ -49,6 +47,8 @@
           )
      (let (: $finalproof ($measq $finalconc $finalstv)) $query (: $finalproof ($measq $finalconc (let $res (cdr-atom $finalstv) (eval $res)))))
      ))
+
+
 ;; Binary rule
 (= (synthesize $query $kb $rb (S $k))
    (let* (((: $ructor (-> $premise1 $premise2 $conclusion)) ($rb))
@@ -81,62 +81,35 @@
      ))
 ;; Quintenary rule
 (= (synthesize $query $kb $rb (S $k))
-   (let* (($_ (println! ("In Quintenary synthesizer")))
+   (let* (
           ((: $ructor (-> $premise1 $premise2 $premise3 $premise4 $premise5 $conclusion)) ($rb))
-          ($_ (println! (premises ($premise1 premise2 $premise2 $premise3 $premise4 $premise5) conclusions ($conclusion))))
           ((: ($ructor $proof1 $proof2 $proof3 $proof4 $proof5) $conclusion) $query)
-          ($_ (println! (Query distructed : ($ructor $proof1 $proof2 $proof3 $proof4 $proof5) $conclusion)))
-          ; (() (println! (In quintenary rule synthesizer)))
-          ($_ (println! (: $proof1 $premise1)))
           ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb $k))        ;  (≞ $q#1675 (STV $Qs#1993 $Qc#1994))
-          ($_ (println! (PP1 : $proof1 $premise1)))
-          ($_ (println! (: $proof2 $premise2)))
           ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb $k))
-          ($_ (println! (PP2 : $proof2 $premise2)))
-          ($_ (println! (: $proof3 $premise3)))
           ((: $proof3 $premise3) (synthesize (: $proof3 $premise3) $kb $rb $k))    
-          ($_ (println! (PP3 : $proof3 $premise3)))
-          ($_ (println! (: $proof4 $premise4)))
           ((: $proof4 $premise4) (synthesize (: $proof4 $premise4) $kb $rb $k))
-          ($_ (println! (PP4 : $proof4 $premise4)))
-          ($_ (println! (: $proof5 $premise5)))
           ((: $proof5 $premise5) (synthesize (: $proof5 $premise5) $kb $rb $k))
-          ($_ (println! (PP5 : $proof5 $premise5)))
           )
      (let (: $finalproof ($measq $finalconc $finalstv)) $query (: $finalproof ($measq $finalconc (let $res (cdr-atom $finalstv) (eval $res)))))
-   ))
+   )
+)
 
 ; Quaternary rule
 (= (synthesize $query $kb $rb (S $k))
    (let* (((: $ructor (-> $premise1 $premise2 $premise3 $premise4 $premise5 $premise6 $conclusion)) ($rb))
-          ($_ (println! (premises ($premise1 premise2 $premise2 $premise3 $premise4 $premise5 $premise6) conclusions ($conclusion))))
           ((: ($ructor $proof1 $proof2 $proof3 $proof4 $proof5 $proof6) $conclusion) $query)
-          ($_ (println! (Query distructed : ($ructor $proof1 $proof2 $proof3 $proof4 $proof5 $proof6) $conclusion)))
-          ($_ (println! (: $proof1 $premise1)))
           ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb $k))
-          ($_ (println! (PP1 : $proof1 $premise1)))
-          ($_ (println! (: $proof2 $premise2)))
           ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb $k))
-          ($_ (println! (PP2 : $proof2 $premise2)))
-          ($_ (println! (: $proof3 $premise3)))
           ((: $proof3 $premise3) (synthesize (: $proof3 $premise3) $kb $rb $k))
-          ($_ (println! (PP3 : $proof3 $premise3)))
-          ($_ (println! (: $proof4 $premise4)))
           ((: $proof4 $premise4) (synthesize (: $proof4 $premise4) $kb $rb $k))
-          ($_ (println! (PP4 : $proof4 $premise4)))
-          ($_ (println! (: $proof5 $premise5)))
           ((: $proof5 $premise5) (synthesize (: $proof5 $premise5) $kb $rb $k))
-          ($_ (println! (PP5 : $proof5 $premise5)))
-          ($_ (println! (: $proof6 $premise6)))
           ((: $proof6 $premise6) (synthesize (: $proof6 $premise6) $kb $rb $k))
-          ($_ (println! (PP6 : $proof6 $premise6)))
           )
      (let (: $finalproof ($measq $finalconc $finalstv)) $query (: $finalproof ($measq $finalconc (let $res (cdr-atom $finalstv) (eval $res)))))
      ))
 
 (= (synthesize $query $kb $rb (S $k))
    (let* (((: $ructor (-> $premise1 $premise2 $premise3 $premise4 $premise5 $premise6 $premise7 $conclusion)) ($rb))
-          ($_ (println! (premises ($premise1 premise2 $premise2 $premise3 $premise4 $premise5 $premise6 $premise7) conclusions ($conclusion))))
           ((: ($ructor $proof1 $proof2 $proof3 $proof4 $proof5 $proof6 $proof7) $conclusion) $query)
           ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb $k))
           ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb $k))
@@ -148,3 +121,50 @@
           )
      (let (: $finalproof ($measq $finalconc $finalstv)) $query (: $finalproof ($measq $finalconc (let $res (cdr-atom $finalstv) (eval $res)))))
      ))
+
+
+(= (synthesize $query $kb $rb (S $k))
+(let* (
+        ((: $ructor (-> $premise1 $premise2 $premise3 $premise4 $premise5 $premise6 $premise7 $premise8 $conclusion)) ($rb))
+        ((: ($ructor $proof1 $proof2 $proof3 $proof4 $proof5 $proof6 $proof7 $proof8) $conclusion) $query)
+        ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb $k))
+    ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb $k))
+    ((: $proof3 $premise3) (synthesize (: $proof3 $premise3) $kb $rb $k))
+    ((: $proof4 $premise4) (synthesize (: $proof4 $premise4) $kb $rb $k))
+    ((: $proof5 $premise5) (synthesize (: $proof5 $premise5) $kb $rb $k))
+    ((: $proof6 $premise6) (synthesize (: $proof6 $premise6) $kb $rb $k))
+    ((: $proof7 $premise7) (synthesize (: $proof7 $premise7) $kb $rb $k))
+    ((: $proof8 $premise8) (synthesize (: $proof8 $premise8) $kb $rb $k))
+        )
+    (let (: $finalproof ($measq $finalconc $finalstv))
+        $query
+        (: $finalproof
+            ($measq $finalconc
+                    (let $res (cdr-atom $finalstv)
+                        (eval $res)))))
+)
+)
+
+
+(= (synthesize $query $kb $rb (S $k))
+(let* (
+        ((: $ructor (-> $premise1 $premise2 $premise3 $premise4 $premise5 $premise6 $premise7 $premise8 $premise9 $conclusion)) ($rb))
+        ((: ($ructor $proof1 $proof2 $proof3 $proof4 $proof5 $proof6 $proof7 $proof8 $proof9) $conclusion) $query)
+        ((: $proof1 $premise1) (synthesize (: $proof1 $premise1) $kb $rb $k))
+    ((: $proof2 $premise2) (synthesize (: $proof2 $premise2) $kb $rb $k))
+    ((: $proof3 $premise3) (synthesize (: $proof3 $premise3) $kb $rb $k))
+    ((: $proof4 $premise4) (synthesize (: $proof4 $premise4) $kb $rb $k))
+    ((: $proof5 $premise5) (synthesize (: $proof5 $premise5) $kb $rb $k))
+    ((: $proof6 $premise6) (synthesize (: $proof6 $premise6) $kb $rb $k))
+    ((: $proof7 $premise7) (synthesize (: $proof7 $premise7) $kb $rb $k))
+    ((: $proof8 $premise8) (synthesize (: $proof8 $premise8) $kb $rb $k))
+    ((: $proof9 $premise9) (synthesize (: $proof9 $premise9) $kb $rb $k))
+        )
+    (let (: $finalproof ($measq $finalconc $finalstv))
+        $query
+        (: $finalproof
+            ($measq $finalconc
+                    (let $res (cdr-atom $finalstv)
+                        (eval $res)))))
+)
+)
