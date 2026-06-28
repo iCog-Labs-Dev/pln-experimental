@@ -2,6 +2,8 @@
 !(import! &self llm)
 !(import! &self AlgebraicSpecificationKB)
 
+!(py-eval "setattr(__import__('builtins'),'normalize_metta_list_text',__import__('importlib').import_module('algebraic_spec_fallback').normalize_metta_list_text) or 0")
+
 ;; Data-layer algebraic specification builder.
 ;;
 ;; AlgebraicSpecificationKB.metta is generated from ConceptNet-style relation
@@ -13,7 +15,23 @@
 ;;   has-axiom
 ;;
 ;; The synthesizer remains responsible for fetching only the features that
-;; match the requested concept and perspective.
+;; match the requested concept and perspective. Perspective matching is
+;; generated in AlgebraicSpecificationKB.metta, so a broad request such as
+;; descriptive-property can collect narrow perspectives such as
+;; physical-attribute, safety-risk, and information-computational.
+
+(= (max-spec-items) (S (S (S (S (S Z))))))
+
+(= (take-spec-items Z $items) ())
+(= (take-spec-items (S $n) $items)
+    (if (== $items ())
+        ()
+        (cons-atom
+            (car-atom $items)
+            (take-spec-items $n (cdr-atom $items)))))
+
+(= (limit-spec-items $items)
+    (take-spec-items (max-spec-items) $items))
 
 (= (spec-feature-formula (stv $featureS $featureC)
                          (stv $perspectiveS $perspectiveC))
@@ -29,34 +47,34 @@
 (: spec-sort-rule (-> Atom))
 (= (spec-sort-rule)
     (: SpecSort
-        (-> (≞ (has-sort $edge $concept $perspective $sort) $featureTv)
-            (≞ (classified-perspective $perspective $perspectiveClass) $perspectiveTv)
-            (≞ (spec-sort $concept $perspective $perspectiveClass $sort)
+        (-> (≞ (has-sort $edge $concept $featurePerspective $sort) $featureTv)
+            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+            (≞ (spec-sort $concept $requestedPerspective $perspectiveClass $sort)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
 (: spec-operation-rule (-> Atom))
 (= (spec-operation-rule)
     (: SpecOperation
-        (-> (≞ (has-operation $edge $concept $perspective $operation) $featureTv)
+        (-> (≞ (has-operation $edge $concept $featurePerspective $operation) $featureTv)
             (≞ (operation-signature $edge $signature) $signatureTv)
-            (≞ (classified-perspective $perspective $perspectiveClass) $perspectiveTv)
-            (≞ (spec-operation $concept $perspective $perspectiveClass (operation $operation $signature))
+            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+            (≞ (spec-operation $concept $requestedPerspective $perspectiveClass (operation $operation $signature))
                 (Method spec-operation-formula $featureTv $signatureTv $perspectiveTv)))))
 
 (: spec-predicate-rule (-> Atom))
 (= (spec-predicate-rule)
     (: SpecPredicate
-        (-> (≞ (has-predicate $edge $concept $perspective $predicate) $featureTv)
-            (≞ (classified-perspective $perspective $perspectiveClass) $perspectiveTv)
-            (≞ (spec-predicate $concept $perspective $perspectiveClass $predicate)
+        (-> (≞ (has-predicate $edge $concept $featurePerspective $predicate) $featureTv)
+            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+            (≞ (spec-predicate $concept $requestedPerspective $perspectiveClass $predicate)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
 (: spec-axiom-rule (-> Atom))
 (= (spec-axiom-rule)
     (: SpecAxiom
-        (-> (≞ (has-axiom $edge $concept $perspective $axiom) $featureTv)
-            (≞ (classified-perspective $perspective $perspectiveClass) $perspectiveTv)
-            (≞ (spec-axiom $concept $perspective $perspectiveClass $axiom)
+        (-> (≞ (has-axiom $edge $concept $featurePerspective $axiom) $featureTv)
+            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+            (≞ (spec-axiom $concept $requestedPerspective $perspectiveClass $axiom)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
 (: spec-rb (-> Atom))
@@ -68,36 +86,40 @@
          (spec-axiom-rule))))
 
 (= (synthesize-spec-sorts $concept $perspective)
-    (collapse
-        (synthesize
-            (: $proof (≞ (spec-sort $concept $perspective $perspectiveClass $sort) $tv))
-            &self
-            spec-rb
-            (S Z))))
+    (limit-spec-items
+        (collapse
+            (synthesize
+                (: $proof (≞ (spec-sort $concept $perspective $perspectiveClass $sort) $tv))
+                &self
+                spec-rb
+                (S Z)))))
 
 (= (synthesize-spec-operations $concept $perspective)
-    (collapse
-        (synthesize
-            (: $proof (≞ (spec-operation $concept $perspective $perspectiveClass $operation) $tv))
-            &self
-            spec-rb
-            (S Z))))
+    (limit-spec-items
+        (collapse
+            (synthesize
+                (: $proof (≞ (spec-operation $concept $perspective $perspectiveClass $operation) $tv))
+                &self
+                spec-rb
+                (S Z)))))
 
 (= (synthesize-spec-predicates $concept $perspective)
-    (collapse
-        (synthesize
-            (: $proof (≞ (spec-predicate $concept $perspective $perspectiveClass $predicate) $tv))
-            &self
-            spec-rb
-            (S Z))))
+    (limit-spec-items
+        (collapse
+            (synthesize
+                (: $proof (≞ (spec-predicate $concept $perspective $perspectiveClass $predicate) $tv))
+                &self
+                spec-rb
+                (S Z)))))
 
 (= (synthesize-spec-axioms $concept $perspective)
-    (collapse
-        (synthesize
-            (: $proof (≞ (spec-axiom $concept $perspective $perspectiveClass $axiom) $tv))
-            &self
-            spec-rb
-            (S Z))))
+    (limit-spec-items
+        (collapse
+            (synthesize
+                (: $proof (≞ (spec-axiom $concept $perspective $perspectiveClass $axiom) $tv))
+                &self
+                spec-rb
+                (S Z)))))
 
 (= (build-algebraic-spec $concept $perspective)
     (let* (($sorts (synthesize-spec-sorts $concept $perspective))
@@ -129,16 +151,19 @@
             $missing-axioms)))
 
 (= (llm-spec-part $concept $perspective $part)
-    (sread
+    (let $text
         (useGenAI
             algebraicspecprompt
             $concept
-            (spec-request $perspective $part))))
+            (spec-request $perspective $part))
+        (sread
+            (py-call (builtins.normalize_metta_list_text $text $concept $perspective $part)))))
 
 (= (with-llm-fallback $items $concept $perspective $part)
-    (if (== $items ())
-        (llm-spec-part $concept $perspective $part)
-        $items))
+    (limit-spec-items
+        (if (== $items ())
+            (llm-spec-part $concept $perspective $part)
+            $items)))
 
 (= (build-algebraic-spec-with-fallback $concept $perspective)
     (let* (($sorts0 (synthesize-spec-sorts $concept $perspective))
@@ -157,12 +182,15 @@
                 (preds $predicates)
                 (axioms $axioms)))))
 
-!(println! "===== Data-layer local spec: socialize under prerequisite-action =====")
-!(build-algebraic-spec socialize prerequisite-action)
+!(println! "===== Data-layer local spec: socialize under descriptive-property =====")
+!(build-algebraic-spec-with-fallback socialize prerequisite-action)
 
-!(println! "===== Data-layer missing parts: computer under descriptive-property =====")
-!(missing-spec-parts computer descriptive-property)
+; !(println! "===== Data-layer local spec: computer under descriptive-property =====")
+; !(build-algebraic-spec-with-fallback computer descriptive-property)
+
+; !(println! "===== Data-layer missing parts: computer under descriptive-property =====")
+; !(missing-spec-parts computer descriptive-property)
 
 ;; This is intentionally not executed during local tests because it calls Gemini
 ;; when any section is missing:
-;; !(build-algebraic-spec-with-fallback computer descriptive-property)
+;; !(build-algebraic-spec-with-fallback unknown_concept descriptive-property)
