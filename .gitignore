@@ -1,2 +1,9 @@
 build
 *~
+
+# Generated / large KB artifacts
+metta/pln/dependent-types/AlgebraicSpecificationKB.metta
+metta/pln/dependent-types/AlgebraicSpecificationKB.pl
+metta/pln/dependent-types/AlgebraicSpecificationKB.qlf
+metta/pln/dependent-types/GeneralizationKB/concept-atomspace/
+metta/pln/dependent-types/GeneralizationKB/concept-atomspace.zip

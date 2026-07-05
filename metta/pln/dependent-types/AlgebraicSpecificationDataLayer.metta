@@ -1,22 +1,23 @@
+!(import! &self ../../../../PeTTa/lib/lib_import)
 !(import! &self synthesizers)
 !(import! &self llm)
-!(import! &self AlgebraicSpecificationKB)
+!(static-import! &algkb AlgebraicSpecificationKB)
 
-!(py-eval "setattr(__import__('builtins'),'normalize_metta_list_text',__import__('importlib').import_module('algebraic_spec_fallback').normalize_metta_list_text) or 0")
+; !(py-eval "setattr(__import__('builtins'),'normalize_metta_list_text',__import__('importlib').import_module('algebraic_spec_fallback').normalize_metta_list_text) or 0")
 
 ;; Data-layer algebraic specification builder.
 ;;
 ;; AlgebraicSpecificationKB.metta is generated from ConceptNet-style relation
 ;; files. The generator normalizes raw relations into perspective-tagged:
-;;   has-sort
-;;   has-operation
-;;   operation-signature
-;;   has-predicate
-;;   has-axiom
+;;   has_sort
+;;   has_operation
+;;   operation_signature
+;;   has_predicate
+;;   has_axiom
 ;;
 ;; The synthesizer remains responsible for fetching only the features that
 ;; match the requested concept and perspective. Perspective matching is
-;; generated in AlgebraicSpecificationKB.metta, so a broad request such as
+;; generated in AlgebraicSpecificationKB.metta and loaded into &algkb, so a broad request such as
 ;; descriptive-property can collect narrow perspectives such as
 ;; physical-attribute, safety-risk, and information-computational.
 
@@ -33,6 +34,48 @@
 (= (limit-spec-items $items)
     (take-spec-items (max-spec-items) $items))
 
+
+(= (kb-perspective-name descriptive-property) descriptive_property)
+(= (kb-perspective-name taxonomic-classification) taxonomic_classification)
+(= (kb-perspective-name prerequisite-action) prerequisite_action)
+(= (kb-perspective-name event-composition) event_composition)
+(= (kb-perspective-name taxonomic-kind) taxonomic_kind)
+(= (kb-perspective-name artifact-kind) artifact_kind)
+(= (kb-perspective-name role-kind) role_kind)
+(= (kb-perspective-name structural-composition) structural_composition)
+(= (kb-perspective-name physical-attribute) physical_attribute)
+(= (kb-perspective-name functional-use) functional_use)
+(= (kb-perspective-name behavioral-process) behavioral_process)
+(= (kb-perspective-name causal-prerequisite) causal_prerequisite)
+(= (kb-perspective-name spatial-context) spatial_context)
+(= (kb-perspective-name temporal-context) temporal_context)
+(= (kb-perspective-name quantitative-comparative) quantitative_comparative)
+(= (kb-perspective-name social-normative) social_normative)
+(= (kb-perspective-name economic-ownership) economic_ownership)
+(= (kb-perspective-name information-computational) information_computational)
+(= (kb-perspective-name safety-risk) safety_risk)
+(= (kb-perspective-name state-lifecycle) state_lifecycle)
+(= (kb-perspective-name descriptive_property) descriptive_property)
+(= (kb-perspective-name taxonomic_classification) taxonomic_classification)
+(= (kb-perspective-name prerequisite_action) prerequisite_action)
+(= (kb-perspective-name event_composition) event_composition)
+(= (kb-perspective-name taxonomic_kind) taxonomic_kind)
+(= (kb-perspective-name artifact_kind) artifact_kind)
+(= (kb-perspective-name role_kind) role_kind)
+(= (kb-perspective-name structural_composition) structural_composition)
+(= (kb-perspective-name physical_attribute) physical_attribute)
+(= (kb-perspective-name functional_use) functional_use)
+(= (kb-perspective-name behavioral_process) behavioral_process)
+(= (kb-perspective-name causal_prerequisite) causal_prerequisite)
+(= (kb-perspective-name spatial_context) spatial_context)
+(= (kb-perspective-name temporal_context) temporal_context)
+(= (kb-perspective-name quantitative_comparative) quantitative_comparative)
+(= (kb-perspective-name social_normative) social_normative)
+(= (kb-perspective-name economic_ownership) economic_ownership)
+(= (kb-perspective-name information_computational) information_computational)
+(= (kb-perspective-name safety_risk) safety_risk)
+(= (kb-perspective-name state_lifecycle) state_lifecycle)
+
 (= (spec-feature-formula (stv $featureS $featureC)
                          (stv $perspectiveS $perspectiveC))
     (stv (* $featureS $perspectiveS)
@@ -47,33 +90,33 @@
 (: spec-sort-rule (-> Atom))
 (= (spec-sort-rule)
     (: SpecSort
-        (-> (≞ (has-sort $edge $concept $featurePerspective $sort) $featureTv)
-            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+        (-> (≞ (has_sort $edge $concept $featurePerspective $sort) $featureTv)
+            (≞ (perspective_match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
             (≞ (spec-sort $concept $requestedPerspective $perspectiveClass $sort)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
 (: spec-operation-rule (-> Atom))
 (= (spec-operation-rule)
     (: SpecOperation
-        (-> (≞ (has-operation $edge $concept $featurePerspective $operation) $featureTv)
-            (≞ (operation-signature $edge $signature) $signatureTv)
-            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+        (-> (≞ (has_operation $edge $concept $featurePerspective $operation) $featureTv)
+            (≞ (operation_signature $edge $signature) $signatureTv)
+            (≞ (perspective_match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
             (≞ (spec-operation $concept $requestedPerspective $perspectiveClass (operation $operation $signature))
                 (Method spec-operation-formula $featureTv $signatureTv $perspectiveTv)))))
 
 (: spec-predicate-rule (-> Atom))
 (= (spec-predicate-rule)
     (: SpecPredicate
-        (-> (≞ (has-predicate $edge $concept $featurePerspective $predicate) $featureTv)
-            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+        (-> (≞ (has_predicate $edge $concept $featurePerspective $predicate) $featureTv)
+            (≞ (perspective_match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
             (≞ (spec-predicate $concept $requestedPerspective $perspectiveClass $predicate)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
 (: spec-axiom-rule (-> Atom))
 (= (spec-axiom-rule)
     (: SpecAxiom
-        (-> (≞ (has-axiom $edge $concept $featurePerspective $axiom) $featureTv)
-            (≞ (perspective-match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
+        (-> (≞ (has_axiom $edge $concept $featurePerspective $axiom) $featureTv)
+            (≞ (perspective_match $requestedPerspective $featurePerspective $perspectiveClass) $perspectiveTv)
             (≞ (spec-axiom $concept $requestedPerspective $perspectiveClass $axiom)
                 (Method spec-feature-formula $featureTv $perspectiveTv)))))
 
@@ -86,40 +129,44 @@
          (spec-axiom-rule))))
 
 (= (synthesize-spec-sorts $concept $perspective)
-    (limit-spec-items
-        (collapse
-            (synthesize
-                (: $proof (≞ (spec-sort $concept $perspective $perspectiveClass $sort) $tv))
-                &self
-                spec-rb
-                (S Z)))))
+    (let $kbPerspective (kb-perspective-name $perspective)
+        (limit-spec-items
+            (collapse
+                (synthesize
+                    (: $proof (≞ (spec-sort $concept $kbPerspective $perspectiveClass $sort) $tv))
+                    &algkb
+                    spec-rb
+                    (S Z))))))
 
 (= (synthesize-spec-operations $concept $perspective)
-    (limit-spec-items
-        (collapse
-            (synthesize
-                (: $proof (≞ (spec-operation $concept $perspective $perspectiveClass $operation) $tv))
-                &self
-                spec-rb
-                (S Z)))))
+    (let $kbPerspective (kb-perspective-name $perspective)
+        (limit-spec-items
+            (collapse
+                (synthesize
+                    (: $proof (≞ (spec-operation $concept $kbPerspective $perspectiveClass $operation) $tv))
+                    &algkb
+                    spec-rb
+                    (S Z))))))
 
 (= (synthesize-spec-predicates $concept $perspective)
-    (limit-spec-items
-        (collapse
-            (synthesize
-                (: $proof (≞ (spec-predicate $concept $perspective $perspectiveClass $predicate) $tv))
-                &self
-                spec-rb
-                (S Z)))))
+    (let $kbPerspective (kb-perspective-name $perspective)
+        (limit-spec-items
+            (collapse
+                (synthesize
+                    (: $proof (≞ (spec-predicate $concept $kbPerspective $perspectiveClass $predicate) $tv))
+                    &algkb
+                    spec-rb
+                    (S Z))))))
 
 (= (synthesize-spec-axioms $concept $perspective)
-    (limit-spec-items
-        (collapse
-            (synthesize
-                (: $proof (≞ (spec-axiom $concept $perspective $perspectiveClass $axiom) $tv))
-                &self
-                spec-rb
-                (S Z)))))
+    (let $kbPerspective (kb-perspective-name $perspective)
+        (limit-spec-items
+            (collapse
+                (synthesize
+                    (: $proof (≞ (spec-axiom $concept $kbPerspective $perspectiveClass $axiom) $tv))
+                    &algkb
+                    spec-rb
+                    (S Z))))))
 
 (= (build-algebraic-spec $concept $perspective)
     (let* (($sorts (synthesize-spec-sorts $concept $perspective))
@@ -182,10 +229,31 @@
                 (preds $predicates)
                 (axioms $axioms)))))
 
-!(println! "===== Data-layer local spec: socialize under descriptive-property =====")
-!(build-algebraic-spec-with-fallback socialize prerequisite-action)
+; !(println! "===== Data-layer local spec: socialize under behavioral-process =====")
+; !(build-algebraic-spec socialize behavioral-process)
 
-; !(println! "===== Data-layer local spec: computer under descriptive-property =====")
+!(println! "===== Data-layer local spec: socialize under prerequisite-action =====")
+!(build-algebraic-spec socialize prerequisite-action)
+
+; !(println! "===== Data-layer local spec: start_fire under behavioral-process =====")
+; !(build-algebraic-spec start_fire behavioral-process)
+
+; !(println! "===== Data-layer local spec: start_fire under prerequisite-action =====")
+; !(build-algebraic-spec start_fire prerequisite-action)
+
+; !(println! "===== Data-layer local spec: computer under taxonomic-classification =====")
+; !(build-algebraic-spec computer taxonomic-classification)
+
+; !(println! "===== Data-layer local spec: abstract_computer_file under information-computational =====")
+; !(build-algebraic-spec abstract_computer_file information-computational)
+
+; !(println! "===== Data-layer local spec: car under functional-use =====")
+; !(build-algebraic-spec car functional-use)
+
+; !(println! "===== Data-layer local spec: car under economic-ownership =====")
+; !(build-algebraic-spec car economic-ownership)
+
+; !(println! "===== Data-layer local spec: computer under descriptive-property with fallback =====")
 ; !(build-algebraic-spec-with-fallback computer descriptive-property)
 
 ; !(println! "===== Data-layer missing parts: computer under descriptive-property =====")

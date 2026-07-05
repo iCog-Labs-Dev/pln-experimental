@@ -4,7 +4,7 @@
 The source data is ConceptNet-style MeTTa with raw relation atoms such as:
 
     (isA apartment building)
-    (hasProperty house susceptible_to_fire)
+    (hasproperty house susceptible_to_fire)
     (hasPrerequisite socialize go_to_party)
     (hasSubevent start_fire light_match)
 
@@ -31,7 +31,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
-SUPPORTED_RELATIONS = {"isA", "hasProperty", "hasPrerequisite", "hasSubevent"}
+RELATION_ALIASES = {
+    "isA": "isA",
+    "IsA": "isA",
+    "hasproperty": "hasproperty",
+    "Hasproperty": "hasproperty",
+    "hasPrerequisite": "hasPrerequisite",
+    "HasPrerequisite": "hasPrerequisite",
+    "hasSubevent": "hasSubevent",
+    "HasSubevent": "hasSubevent",
+}
+SUPPORTED_RELATIONS = set(RELATION_ALIASES.values())
 SPEC_PARTS = ("sorts", "operations", "predicates", "axioms")
 
 
@@ -62,19 +72,19 @@ PERSPECTIVES = {
 }
 
 PERSPECTIVE_SORTS = {
-    "physical-attribute": ("ConceptInstance", "PhysicalAttribute"),
-    "functional-use": ("ConceptInstance", "FunctionRole"),
-    "behavioral-process": ("ProcessState", "BehaviorState"),
-    "causal-prerequisite": ("ActionState", "PreconditionState"),
-    "spatial-context": ("ConceptInstance", "SpatialContext"),
-    "temporal-context": ("ConceptInstance", "TemporalContext"),
-    "quantitative-comparative": ("ConceptInstance", "ComparativeMeasure"),
-    "social-normative": ("ConceptInstance", "SocialEvaluation"),
-    "economic-ownership": ("ConceptInstance", "EconomicValue"),
-    "information-computational": ("ConceptInstance", "InformationState"),
-    "safety-risk": ("ConceptInstance", "RiskCondition"),
-    "state-lifecycle": ("ConceptInstance", "StateCondition"),
-    "structural-composition": ("Whole", "Part"),
+    "physical-attribute": ("concept_instance", "physical_attribute"),
+    "functional-use": ("concept_instance", "function_role"),
+    "behavioral-process": ("process_state", "behavior_state"),
+    "causal-prerequisite": ("action_state", "precondition_state"),
+    "spatial-context": ("concept_instance", "spatial_context"),
+    "temporal-context": ("concept_instance", "temporal_context"),
+    "quantitative-comparative": ("concept_instance", "comparative_measure"),
+    "social-normative": ("concept_instance", "social_evaluation"),
+    "economic-ownership": ("concept_instance", "economic_value"),
+    "information-computational": ("concept_instance", "information_state"),
+    "safety-risk": ("concept_instance", "risk_condition"),
+    "state-lifecycle": ("concept_instance", "state_condition"),
+    "structural-composition": ("whole", "part"),
 }
 
 HARD_REJECT_MARKERS = {
@@ -410,6 +420,17 @@ def parse_float(value, default=1.0):
         return default
 
 
+def safe_metta_symbol(atom):
+    text = atom[1:-1] if atom[:1] == chr(39) and atom[-1:] == chr(39) else atom
+    text = text.strip("()")
+    text = re.sub(r"\s+", "_", text)
+    text = re.sub(r"[^A-Za-z0-9_]", "_", text)
+    text = re.sub(r"_+", "_", text).strip("_")
+    if not text or not re.match(r"^[A-Za-z_]", text):
+        text = f"c_{text}"
+    return text
+
+
 def iter_input_paths(inputs):
     for raw in inputs:
         path = Path(raw)
@@ -428,8 +449,8 @@ def iter_records_from_file(path):
             return None
         return Record(
             relation=current["relation"],
-            source=current["source"],
-            target=current["target"],
+            source=safe_metta_symbol(current["source"]),
+            target=safe_metta_symbol(current["target"]),
             weight=current["weight"],
             surface_text=current["surface_text"],
             source_file=str(path),
@@ -443,12 +464,13 @@ def iter_records_from_file(path):
                 continue
 
             head = tokens[0]
-            if head in SUPPORTED_RELATIONS and len(tokens) >= 3:
+            canonical_relation = RELATION_ALIASES.get(head)
+            if canonical_relation and len(tokens) >= 3:
                 record = flush()
                 if record:
                     yield record
                 current = {
-                    "relation": head,
+                    "relation": canonical_relation,
                     "source": tokens[1],
                     "target": tokens[2],
                     "weight": 1.0,
@@ -506,8 +528,8 @@ def joined(atom):
 
 def atom_id(*parts):
     raw = "-".join(plain_name(str(part)) for part in parts)
-    normalized = re.sub(r"[^A-Za-z0-9_+-]+", "-", raw)
-    normalized = re.sub(r"-+", "-", normalized).strip("-")
+    normalized = re.sub(r"[^A-Za-z0-9_]+", "_", raw)
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
     return normalized or "feature"
 
 
@@ -518,8 +540,15 @@ def operation_name(prefix, target):
     return name
 
 
+def static_safe_text(text):
+    text = text.replace("->", "arrow")
+    text = re.sub(r"(?<=[A-Za-z0-9_])[-+](?=[A-Za-z0-9_])", "_", text)
+    text = re.sub(r"(?<![A-Za-z0-9_])[-+](?=[A-Za-z0-9_])", "_", text)
+    return text
+
+
 def fact(proof, statement, tv):
-    return f"(: {proof} (≞ {statement} {tv}))"
+    return f"(: {static_safe_text(proof)} (≞ {static_safe_text(statement)} {tv}))"
 
 
 def has_any_marker(text, markers):
@@ -644,7 +673,7 @@ def classify_record(record, keep_noisy_targets=False):
 
     if record.relation == "isA":
         return classify_is_a(record)
-    if record.relation == "hasProperty":
+    if record.relation == "hasproperty":
         return classify_has_property(record)
     if record.relation == "hasPrerequisite":
         return Classification("causal-prerequisite", "precondition", 0.2)
@@ -712,23 +741,23 @@ def predicate_for(record, classification):
     if classification.perspective == "safety-risk":
         return f"(hasRisk {source} {target})"
     if classification.perspective == "economic-ownership":
-        return f"(hasEconomicProperty {source} {target})"
+        return f"(hasEconomicproperty {source} {target})"
     if classification.perspective == "information-computational":
-        return f"(hasInformationProperty {source} {target})"
+        return f"(hasInformationproperty {source} {target})"
     if classification.perspective == "spatial-context":
         return f"(hasSpatialContext {source} {target})"
     if classification.perspective == "temporal-context":
         return f"(hasTemporalContext {source} {target})"
     if classification.perspective == "state-lifecycle":
-        return f"(hasStateCondition {source} {target})"
+        return f"(hasstate_condition {source} {target})"
     if classification.perspective == "quantitative-comparative":
         return f"(hasComparison {source} {target})"
     if classification.perspective == "social-normative":
         return f"(hasSocialEvaluation {source} {target})"
-    if classification.perspective == "behavioral-process" and record.relation == "hasProperty":
-        return f"(hasBehaviorState {source} {target})"
-    if record.relation == "hasProperty":
-        return f"(hasProperty {source} {target})"
+    if classification.perspective == "behavioral-process" and record.relation == "hasproperty":
+        return f"(hasbehavior_state {source} {target})"
+    if record.relation == "hasproperty":
+        return f"(hasproperty {source} {target})"
     return f"({record.relation} {source} {target})"
 
 
@@ -758,23 +787,23 @@ def axiom_for(record, classification, predicate):
 def operation_for_property(record, classification):
     target = joined(record.target)
     if classification.perspective == "physical-attribute":
-        return operation_name("measure", target), "(-> ConceptInstance PhysicalAttribute)"
+        return operation_name("measure", target), "(-> concept_instance physical_attribute)"
     if classification.perspective == "functional-use":
-        return operation_name("use_for", target), "(-> ConceptInstance FunctionalResult)"
+        return operation_name("use_for", target), "(-> concept_instance functional_result)"
     if classification.perspective == "economic-ownership":
-        return operation_name("assess", target), "(-> ConceptInstance EconomicValue)"
+        return operation_name("assess", target), "(-> concept_instance economic_value)"
     if classification.perspective == "information-computational":
         if "arithmetic" in target:
-            return "compute_arithmetic", "(-> ConceptInstance InformationState)"
+            return "compute_arithmetic", "(-> concept_instance information_state)"
         if "numbers" in target:
-            return "compute_numbers", "(-> ConceptInstance InformationState)"
-        return operation_name("process", target), "(-> ConceptInstance InformationState)"
+            return "compute_numbers", "(-> concept_instance information_state)"
+        return operation_name("process", target), "(-> concept_instance information_state)"
     if classification.perspective == "safety-risk":
-        return operation_name("assess_risk", target), "(-> ConceptInstance RiskCondition)"
+        return operation_name("assess_risk", target), "(-> concept_instance risk_condition)"
     if classification.perspective == "state-lifecycle":
-        return operation_name("observe_state", target), "(-> ConceptInstance StateCondition)"
+        return operation_name("observe_state", target), "(-> concept_instance state_condition)"
     if classification.perspective == "behavioral-process":
-        return operation_name("perform", target), "(-> ProcessState ProcessState)"
+        return operation_name("perform", target), "(-> process_state process_state)"
     return None, None
 
 
@@ -826,7 +855,7 @@ def candidates_for_is_a(record, classification):
     axiom = axiom_for(record, classification, predicate)
     items = []
 
-    for sort_name in PERSPECTIVE_SORTS.get(perspective, ("ConceptInstance", "ContextFeature")):
+    for sort_name in PERSPECTIVE_SORTS.get(perspective, ("concept_instance", "context_feature")):
         items.append(generic_sort_candidate(record, perspective, sort_name, classification))
 
     items.extend(
@@ -860,7 +889,7 @@ def candidates_for_has_property(record, classification):
     axiom = axiom_for(record, classification, predicate)
     items = []
 
-    for sort_name in PERSPECTIVE_SORTS.get(perspective, ("ConceptInstance", "Property")):
+    for sort_name in PERSPECTIVE_SORTS.get(perspective, ("concept_instance", "property")):
         items.append(generic_sort_candidate(record, perspective, sort_name, classification))
 
     op, signature = operation_for_property(record, classification)
@@ -903,20 +932,21 @@ def candidates_for_has_prerequisite(record, classification):
     score = base_score(record, classification)
     tv = stv_from_weight(record.weight)
     stem = atom_id("alg", "prerequisite", source, target)
-    op = operation_name("prepare", target)
+    operation_stem = atom_id("alg", "prerequisite", source, perspective)
+    op = atom_id("establish_preconditions", source, perspective).replace("-", "_")
 
     return [
-        generic_sort_candidate(record, perspective, "ActionState", classification, bonus=0.1),
-        generic_sort_candidate(record, perspective, "PreconditionState", classification, bonus=0.1),
+        generic_sort_candidate(record, perspective, "action_state", classification, bonus=0.1),
+        generic_sort_candidate(record, perspective, "precondition_state", classification, bonus=0.1),
         candidate(
             (source, perspective, "operations"),
             ("operation", source, perspective, op),
             score,
             record.order,
-            fact(f"{stem}-operation", f"(has-operation {stem}-operation {source} {perspective} {op})", tv),
+            fact(f"{operation_stem}-operation", f"(has-operation {operation_stem}-operation {source} {perspective} {op})", tv),
             fact(
-                f"{stem}-signature",
-                f"(operation-signature {stem}-operation (-> PreconditionState ActionState ActionState))",
+                f"{operation_stem}-signature",
+                f"(operation-signature {operation_stem}-operation (-> precondition_state action_state action_state))",
                 "(stv 0.880 0.820)",
             ),
         ),
@@ -934,7 +964,7 @@ def candidates_for_has_prerequisite(record, classification):
             record.order,
             fact(
                 f"{stem}-axiom",
-                f"(has-axiom {stem}-axiom {source} {perspective} (=> (perform {source}) (requires {source} {target})))",
+                f"(has-axiom {stem}-axiom {source} {perspective} (=> (and (requires {source} {target}) (not (satisfied {target}))) (blocked {source})))",
                 tv,
             ),
         ),
@@ -947,20 +977,21 @@ def candidates_for_has_subevent(record, classification):
     score = base_score(record, classification)
     tv = stv_from_weight(record.weight)
     stem = atom_id("alg", "subevent", source, target)
-    op = operation_name("compose", target)
+    operation_stem = atom_id("alg", "subevent", source, perspective)
+    op = atom_id("compose_process", source, perspective).replace("-", "_")
 
     return [
-        generic_sort_candidate(record, perspective, "ProcessState", classification, bonus=0.1),
-        generic_sort_candidate(record, perspective, "BehaviorState", classification, bonus=0.1),
+        generic_sort_candidate(record, perspective, "process_state", classification, bonus=0.1),
+        generic_sort_candidate(record, perspective, "behavior_state", classification, bonus=0.1),
         candidate(
             (source, perspective, "operations"),
             ("operation", source, perspective, op),
             score,
             record.order,
-            fact(f"{stem}-operation", f"(has-operation {stem}-operation {source} {perspective} {op})", tv),
+            fact(f"{operation_stem}-operation", f"(has-operation {operation_stem}-operation {source} {perspective} {op})", tv),
             fact(
-                f"{stem}-signature",
-                f"(operation-signature {stem}-operation (-> ProcessState BehaviorState ProcessState))",
+                f"{operation_stem}-signature",
+                f"(operation-signature {operation_stem}-operation (-> process_state behavior_state process_state))",
                 "(stv 0.880 0.820)",
             ),
         ),
@@ -978,7 +1009,7 @@ def candidates_for_has_subevent(record, classification):
             record.order,
             fact(
                 f"{stem}-axiom",
-                f"(has-axiom {stem}-axiom {source} {perspective} (=> (perform {source}) (perform {target})))",
+                f"(has-axiom {stem}-axiom {source} {perspective} (=> (and (hasSubevent {source} {target}) (not (completed {target}))) (incomplete {source})))",
                 tv,
             ),
         ),
@@ -987,7 +1018,7 @@ def candidates_for_has_subevent(record, classification):
 
 CANDIDATE_BUILDERS = {
     "isA": candidates_for_is_a,
-    "hasProperty": candidates_for_has_property,
+    "hasproperty": candidates_for_has_property,
     "hasPrerequisite": candidates_for_has_prerequisite,
     "hasSubevent": candidates_for_has_subevent,
 }
@@ -1150,13 +1181,7 @@ def main():
         keep_noisy_targets=args.keep_noisy_targets,
     )
 
-    header = [
-        ";; Generated by scripts/gen_algebraic_spec_kb.py.",
-        f";; Top {args.max_per_part} features per concept, perspective, and spec section.",
-        ";; Perspective-tagged algebraic specification feature facts.",
-        "",
-    ]
-    Path(args.output).write_text("\n".join(header + lines) + "\n", encoding="utf-8")
+    Path(args.output).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     grouped = defaultdict(int)
     for item in selected:
@@ -1181,19 +1206,19 @@ if __name__ == "__main__":
 
 # (Concept socialize (perspective prerequisite-action) 
 # (spec (sorts ((: 
-# (SpecSort alg-sort-socialize-causal-prerequisite-ActionState prerequisite-action-matches-causal-prerequisite) (≞ (spec-sort socialize prerequisite-action causal-precondition-role ActionState) (stv 0.7372 0.72))) (: 
-# (SpecSort alg-sort-socialize-causal-prerequisite-PreconditionState prerequisite-action-matches-causal-prerequisite) (≞ (spec-sort socialize prerequisite-action causal-precondition-role PreconditionState) (stv 0.7372 0.72))))) 
+# (SpecSort alg-sort-socialize-causal-prerequisite-action_state prerequisite-action-matches-causal-prerequisite) (≞ (spec-sort socialize prerequisite-action causal-precondition-role action_state) (stv 0.7372 0.72))) (: 
+# (SpecSort alg-sort-socialize-causal-prerequisite-precondition_state prerequisite-action-matches-causal-prerequisite) (≞ (spec-sort socialize prerequisite-action causal-precondition-role precondition_state) (stv 0.7372 0.72))))) 
 # (ops (
 # (: (SpecOperation alg-prerequisite-socialize-meet_people-operation alg-prerequisite-socialize-meet_people-signature prerequisite-action-matches-causal-prerequisite)
-#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_meet_people (-> PreconditionState ActionState ActionState))) (stv 0.6769048000000001 0.589))) 
+#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_meet_people (-> precondition_state action_state action_state))) (stv 0.6769048000000001 0.589))) 
 # (: (SpecOperation alg-prerequisite-socialize-go_to_clubs-operation alg-prerequisite-socialize-go_to_clubs-signature prerequisite-action-matches-causal-prerequisite)
-#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_go_to_clubs (-> PreconditionState ActionState ActionState))) (stv 0.6034952 0.522))) 
+#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_go_to_clubs (-> precondition_state action_state action_state))) (stv 0.6034952 0.522))) 
 # (: (SpecOperation alg-prerequisite-socialize-go_to_party-operation alg-prerequisite-socialize-go_to_party-signature prerequisite-action-matches-causal-prerequisite)
-#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_go_to_party (-> PreconditionState ActionState ActionState))) (stv 0.6034952 0.522))) 
+#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_go_to_party (-> precondition_state action_state action_state))) (stv 0.6034952 0.522))) 
 # (: (SpecOperation alg-prerequisite-socialize-have_friends-operation alg-prerequisite-socialize-have_friends-signature prerequisite-action-matches-causal-prerequisite)
-#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_have_friends (-> PreconditionState ActionState ActionState))) (stv 0.6034952 0.522))) 
+#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_have_friends (-> precondition_state action_state action_state))) (stv 0.6034952 0.522))) 
 # (: (SpecOperation alg-prerequisite-socialize-talk_to_people-operation alg-prerequisite-socialize-talk_to_people-signature prerequisite-action-matches-causal-prerequisite)
-#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_talk_to_people (-> PreconditionState ActionState ActionState))) (stv 0.6034952 0.522))))) 
+#  (≞ (spec-operation socialize prerequisite-action causal-precondition-role (operation prepare_talk_to_people (-> precondition_state action_state action_state))) (stv 0.6034952 0.522))))) 
 # (preds (
 # (: (SpecPredicate alg-prerequisite-socialize-meet_people-predicate prerequisite-action-matches-causal-prerequisite) (≞ (spec-predicate socialize prerequisite-action causal-precondition-role (requires socialize meet_people)) (stv 0.7692100000000001 0.589))) 
 # (: (SpecPredicate alg-prerequisite-socialize-go_to_clubs-predicate prerequisite-action-matches-causal-prerequisite) (≞ (spec-predicate socialize prerequisite-action causal-precondition-role (requires socialize go_to_clubs)) (stv 0.6857899999999999 0.522))) 
