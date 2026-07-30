@@ -20,7 +20,11 @@
 !(py-eval "setattr(__import__('builtins'),'apply_kwargs',(lambda f,d: f(**d))) or 0")
 ;Add to builtins a function that can access by index:
 !(py-eval "setattr(__import__('builtins'),'index', (lambda o,i: o[i])) or 0")
+;Dict helpers:
+!(py-eval "setattr(__import__('builtins'),'make_openai_responses_kwargs',(lambda m,t,e,p:{'model':m,'input':p,'max_output_tokens':t,'reasoning':{'effort':e}})) or 0")
+!(py-eval "setattr(__import__('builtins'),'make_openai_embedding_kwargs',(lambda x:{'model':'text-embedding-3-large','input':x})) or 0")
 
+!(change-state! &openai_client (py-call (openai.OpenAI)))
 
 ; Function to call Google Gemini using the new google-genai SDK
 (= (useGenAI $prompt-name $concept1 $concept2)
@@ -51,6 +55,18 @@
           ($text (py-call (getattr $resp "text"))))
          $text))
 
+(= (useGPT $prompt)
+   (useGPT gpt-5.2 1000000 medium $prompt))
+(= (useGPT $model $max_tokens $effort $prompt)
+   (let* (($client    (get-state &openai_client))
+          ($responses (py-call (getattr $client "responses")))
+          ($create    (py-call (getattr $responses "create")))
+          ($kwargs    (py-call (builtins.make_openai_responses_kwargs $model $max_tokens $effort $prompt)))
+          ($res       (py-call (builtins.apply_kwargs $create $kwargs)))
+          ($text      (py-call (getattr $res "output_text")))
+          ($_ (cut)))
+         $text))
 
+; !(useGPT "hey")
 
 ; !(useGenAI lcgprompt (sea (sea -> surface-water -> watershed -> hydrologic-system -> planetary-composition)) (land (land -> land-surface -> landform -> terrain -> geosphere)))
