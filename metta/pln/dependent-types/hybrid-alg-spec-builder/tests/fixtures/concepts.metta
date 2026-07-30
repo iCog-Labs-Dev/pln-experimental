@@ -1,0 +1,47 @@
+(isA knife cutting_tool)
+(weight knife 2.0)
+(surfaceText knife 'a knife is a cutting tool')
+(UsedFor knife stabbing)
+(weight knife 3.0)
+(UsedFor knife butter)
+(weight knife 1.5)
+(hasproperty knife sharp)
+(weight knife 2.0)
+(Causes knife injury)
+(weight knife 1.2)
+
+(isA car vehicle)
+(weight car 3.0)
+(UsedFor car transport)
+(weight car 3.0)
+(CapableOf car carry_people)
+(weight car 2.0)
+
+(isA box container)
+(weight box 2.0)
+(UsedFor box store_objects)
+(weight box 2.0)
+
+(isA computer electronic_device)
+(weight computer 3.0)
+(CapableOf computer calculate)
+(weight computer 3.0)
+
+(isA human person)
+(weight human 3.0)
+(CapableOf human communicate)
+(weight human 3.0)
+
+(HasA theorem premise)
+(weight theorem 2.0)
+(HasA theorem conclusion)
+(weight theorem 2.0)
+
+(hasproperty house susceptible_to_fire)
+(weight house 2.0)
+
+(AtLocation school city)
+(weight school 2.0)
+
+(hasPrerequisite socialize meet_people)
+(weight socialize 2.0)
