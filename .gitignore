@@ -7,8 +7,5 @@ __pycache__/
 metta/pln/dependent-types/venv
 
 # Knowledge-base sources, generated data, evidence, caches, and runtime files.
-metta/pln/dependent-types/GeneralizationKB/
+metta/pln/dependent-types/generalization-component/kb/
 metta/pln/dependent-types/v-predicate-extraction-pipeline/kb/
-metta/pln/dependent-types/GeneralizationKB.metta
-metta/pln/dependent-types/GeneralizationKB.pl
-metta/pln/dependent-types/GeneralizationKB.qlf
